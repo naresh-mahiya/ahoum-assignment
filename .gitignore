@@ -1,0 +1,32 @@
+# ─── Secrets ───
+.env
+*.env.local
+
+# ─── Python ───
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.sqlite3
+staticfiles/
+media/
+
+# ─── Node / Frontend ───
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+*.log
+npm-debug.log*
+
+# ─── Editor / OS ───
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ─── Docker ───
+*.pid
+*.md
+!readme.md

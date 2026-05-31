@@ -1,0 +1,19 @@
+# Development overrides — applied automatically by `docker compose up`.
+# Mounts source for live reload and runs Django's autoreloading dev server.
+services:
+
+  backend:
+    command: >
+      sh -c "python manage.py wait_for_db &&
+             python manage.py makemigrations accounts sessions_app bookings payments --noinput &&
+             python manage.py migrate --noinput &&
+             python manage.py createsuperuser_if_not_exists &&
+             python manage.py collectstatic --noinput &&
+             python manage.py seed_data --if-empty &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    environment:
+      DJANGO_DEBUG: "True"
