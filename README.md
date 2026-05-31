@@ -1,48 +1,72 @@
 # Ahoum Sessions Marketplace
 
-A full-stack Sessions Marketplace web application built with React + Django REST Framework, PostgreSQL, MinIO, and Docker.
-
-## Tech Stack
-
-- **Frontend**: React (Vite) + TypeScript + Tailwind CSS
-- **Backend**: Django + Django REST Framework
-- **Database**: PostgreSQL 16
-- **Auth**: OAuth (Google + GitHub) → Backend issues JWT tokens
-- **Object Storage**: MinIO (S3-compatible) — bonus feature
-- **Payments**: Stripe (test mode) — bonus feature
-- **Infrastructure**: Docker Compose (frontend, backend, db, nginx, minio)
+> Full-Stack Developer Intern Assignment — Ahoum SpiritualTech
+>
+> A sessions marketplace where users sign in via OAuth, browse spiritual wellness sessions, and book them. Creators can publish and manage their own sessions.
 
 ---
 
-## Quick Start
+## Tech Stack
 
-### 1. Clone the repository
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 + Vite + TypeScript + Tailwind CSS |
+| Backend | Django 5 + Django REST Framework |
+| Database | PostgreSQL 16 |
+| Auth | OAuth 2.0 (Google + GitHub) + JWT (SimpleJWT) |
+| Storage | MinIO (S3-compatible) — bonus |
+| Payments | Stripe (test mode) — bonus |
+| Infrastructure | Docker Compose + Nginx reverse proxy |
+
+---
+
+## Quick Start (One Command)
 
 ```bash
+# 1. Clone the repository
 git clone <your-repo-url>
 cd ahoum
-```
 
-### 2. Set up environment variables
-
-```bash
+# 2. Create your .env file
 cp .env.example .env
+# OAuth credentials are optional — see "Demo Flow" below
+
+# 3. Start everything
+docker compose up --build
 ```
 
-Then edit `.env` and fill in:
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (or GitHub equivalents)
-- `VITE_GOOGLE_CLIENT_ID` / `VITE_GITHUB_CLIENT_ID`
-- `DJANGO_SECRET_KEY` (any long random string)
+Visit **http://localhost** — the app is running.
 
-All other values (DB, MinIO, Stripe test keys) work as-is from `.env.example`.
+> **No OAuth credentials?** Use the **"Enter Demo"** login on the login page.
+> It works without any credentials when `DJANGO_DEBUG=True` (the default).
 
-### 3. Start everything with one command
+---
 
-```bash
-docker-compose up --build
+## Environment Variables
+
+Copy `.env.example` to `.env`. The defaults work out of the box for Docker.
+
+The only values you need to change to enable real OAuth logins:
+
+```env
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+VITE_GOOGLE_CLIENT_ID=your-google-client-id
+VITE_GITHUB_CLIENT_ID=your-github-client-id
 ```
 
-The app will be available at **http://localhost**
+For Stripe payments (bonus, test mode):
+
+```env
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
+
+MinIO and PostgreSQL credentials have safe defaults in `.env.example`.
 
 ---
 
@@ -50,55 +74,146 @@ The app will be available at **http://localhost**
 
 ### Google OAuth
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
-2. Create an **OAuth 2.0 Client ID** (Web application)
-3. Add Authorized redirect URI: `http://localhost/api/accounts/oauth/google/callback/`
-4. Copy Client ID and Secret into `.env`:
-   ```
-   GOOGLE_CLIENT_ID=...
-   GOOGLE_CLIENT_SECRET=...
-   VITE_GOOGLE_CLIENT_ID=...
-   ```
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials.
+2. Create an **OAuth 2.0 Client ID** (Application type: Web application).
+3. Add `http://localhost/auth/callback` to **Authorized redirect URIs**.
+4. Copy the Client ID and Secret into `.env` as `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `VITE_GOOGLE_CLIENT_ID`.
 
 ### GitHub OAuth
 
-1. Go to GitHub → Settings → Developer settings → OAuth Apps → New OAuth App
-2. Set **Authorization callback URL**: `http://localhost/api/accounts/oauth/github/callback/`
-3. Copy Client ID and Secret into `.env`:
-   ```
-   GITHUB_CLIENT_ID=...
-   GITHUB_CLIENT_SECRET=...
-   VITE_GITHUB_CLIENT_ID=...
-   ```
+1. Go to GitHub → Settings → Developer Settings → OAuth Apps → **New OAuth App**.
+2. Set **Homepage URL** to `http://localhost`.
+3. Set **Authorization callback URL** to `http://localhost/auth/callback`.
+4. Copy the Client ID and Secret into `.env` as `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `VITE_GITHUB_CLIENT_ID`.
+
+> After setting credentials, rebuild: `docker compose up --build`
 
 ---
 
-## Demo Flow
+## Demo Flow (No OAuth Credentials Needed)
 
-### 1. Login
-- Visit `http://localhost`
-- Click **Sign in with Google** (or GitHub)
-- You will be redirected back and logged in with a JWT token
+The backend exposes a development login endpoint when `DJANGO_DEBUG=True` (default). Evaluate all features without any OAuth setup.
 
-### 2. Browse Sessions (User role)
-- The home page shows all available sessions
-- Click any session to view details
-- Click **Book Now** to book the session
-- View your bookings in the **User Dashboard**
+**Seeded demo accounts (auto-created on first startup):**
 
-### 3. Create a Session (Creator role)
-- In the **Creator Dashboard**, click **Create Session**
-- Fill in title, description, price, date, capacity
-- (Bonus) Upload a cover image — stored in MinIO
-- Your session appears in the public catalog immediately
+| Email | Role |
+|-------|------|
+| `user@demo.com` | User |
+| `creator@demo.com` | Creator |
+| `guru@demo.com` | Creator |
 
-### 4. View Bookings (Creator role)
-- Creator Dashboard shows all bookings for your sessions
-- See attendee details and booking status
+**Step-by-step walkthrough:**
 
-### 5. Payment (Bonus — Stripe test mode)
-- Use card number `4242 4242 4242 4242`, any future date, any CVC
-- Booking is confirmed after successful payment
+1. Open **http://localhost** — you see the session catalog with seeded sessions.
+2. Click **Get started** → Login page.
+3. In the **"or try the demo"** section, enter `creator@demo.com`, tick **"Sign in as a Creator"**, click **Enter Demo**.
+4. You land on the **Creator Dashboard** — click **Create new session**, fill in the form, click **Save**. Then click **Publish**.
+5. Click the Ahoum logo → catalog → your session appears.
+6. Top-right menu → **Logout**.
+7. Log in as `user@demo.com` (leave "Creator" unchecked).
+8. Find the session → click it → **Session detail page** → click **Book Now**.
+   - Free session: confirmed immediately.
+   - Paid session: Stripe form appears — use test card `4242 4242 4242 4242`, any future expiry, any CVC.
+9. Go to **Dashboard** → see your booking under **Upcoming**.
+10. Log out → log back in as `creator@demo.com` → **Creator Dashboard** → **Bookings Overview** → see the attendee (with CSV export).
+
+---
+
+## Features Implemented
+
+### Core (100 pts)
+
+- **OAuth login** via Google and GitHub; backend issues JWT access + refresh tokens
+- **Two roles**: User (browse & book) and Creator (create & manage sessions)
+- Any user can self-upgrade to Creator from their dashboard
+- **Session catalog**: paginated, searchable, filterable by category and free/paid
+- **Session detail**: date/time, duration, capacity bar, price, creator info, tags
+- **Booking flow**: capacity check, duplicate-booking prevention, confirmation
+- **Booking cancellation** with configurable time-window guard
+- **User Dashboard**: upcoming / past / cancelled bookings tabs; profile editor
+- **Creator Dashboard**: full session CRUD, publish/cancel, per-session attendee list with CSV export, revenue stats
+- **Profile page**: update name, bio; upload avatar (stored in MinIO)
+- Role-based route protection (frontend + backend)
+- JWT token refresh and blacklisting on logout
+
+### Bonus (+15 pts)
+
+- **Stripe** (test mode): PaymentIntent, Stripe Elements UI, webhook handler
+- **MinIO** (S3-compatible): avatar uploads and session cover image uploads
+- **Rate limiting**: `django-ratelimit` on auth and booking endpoints + DRF global throttle (60 req/min anonymous, 120/min authenticated)
+
+---
+
+## API Reference
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/health/` | GET | No | Health check |
+| `/api/auth/oauth/` | POST | No | Exchange OAuth code for JWT |
+| `/api/auth/dev-login/` | POST | No | Demo login (DEBUG=True only) |
+| `/api/auth/logout/` | POST | Yes | Blacklist refresh token |
+| `/api/auth/me/` | GET/PATCH | Yes | Get / update profile |
+| `/api/auth/me/avatar/` | POST | Yes | Upload avatar to MinIO |
+| `/api/auth/become-creator/` | POST | Yes | Upgrade role to creator |
+| `/api/sessions/` | GET | No | Public session catalog |
+| `/api/sessions/<id>/` | GET | No | Session detail |
+| `/api/sessions/` | POST | Creator | Create session |
+| `/api/sessions/<id>/` | PATCH/DELETE | Owner | Edit / delete session |
+| `/api/sessions/<id>/publish/` | POST | Owner | Publish a draft |
+| `/api/sessions/<id>/cancel/` | POST | Owner | Cancel a session |
+| `/api/sessions/my/` | GET | Creator | Creator's own sessions |
+| `/api/sessions/cover-image/` | POST | Creator | Upload cover image |
+| `/api/bookings/` | POST | User | Book a session |
+| `/api/bookings/mine/` | GET | User | My bookings |
+| `/api/bookings/<id>/cancel/` | DELETE | User | Cancel a booking |
+| `/api/bookings/session/<id>/` | GET | Creator | Session attendees |
+| `/api/payments/create-intent/` | POST | User | Create Stripe PaymentIntent |
+| `/api/payments/status/<id>/` | GET | User | Payment status |
+| `/api/payments/webhook/` | POST | No | Stripe webhook |
+
+---
+
+## Docker Services
+
+| Service | Description | Port |
+|---------|-------------|------|
+| `nginx` | Reverse proxy — `/api/` → backend, `/` → frontend | **80** |
+| `frontend` | React SPA (Vite build, served by Nginx) | internal |
+| `backend` | Django + Gunicorn (4 workers) | internal |
+| `db` | PostgreSQL 16 | internal |
+| `minio` | Object storage (S3-compatible) | 9000 (API), 9001 (console) |
+
+---
+
+## Useful Commands
+
+```bash
+# Start
+docker compose up --build
+
+# Start in background
+docker compose up --build -d
+
+# Stop (keep data)
+docker compose down
+
+# Stop and wipe all data (fresh start)
+docker compose down -v
+
+# View logs
+docker compose logs -f
+
+# Re-seed demo data
+docker compose exec backend python manage.py seed_data
+
+# Run tests
+docker compose exec backend python manage.py test
+
+# Django Admin
+# URL:      http://localhost/admin
+# Email:    admin@ahoum.com
+# Password: adminpassword123
+```
 
 ---
 
@@ -106,39 +221,29 @@ The app will be available at **http://localhost**
 
 ```
 ahoum/
-├── backend/              # Django + DRF
+├── backend/
 │   ├── apps/
-│   │   ├── accounts/     # OAuth, JWT, user profiles
-│   │   ├── sessions_app/ # Sessions CRUD
-│   │   ├── bookings/     # Booking flow
-│   │   └── payments/     # Stripe + MinIO
-│   ├── config/           # Django settings (base/dev/prod)
-│   └── entrypoint.sh     # Runs migrations + seeds data
-├── frontend/             # React + Vite + TypeScript
+│   │   ├── accounts/        # User model, OAuth exchange, JWT, profile, avatar upload
+│   │   ├── sessions_app/    # Session model, CRUD, filters, cover image upload
+│   │   ├── bookings/        # Booking model, create/cancel/list views
+│   │   └── payments/        # Stripe integration, MinIO client, Payment model
+│   ├── config/              # Django settings (base / development / production)
+│   ├── entrypoint.sh        # Auto-migrate, collect static, seed, start gunicorn
+│   └── requirements.txt
+├── frontend/
 │   └── src/
-│       ├── pages/        # Login, Catalog, Dashboard, etc.
-│       ├── components/   # UI components
-│       ├── hooks/        # Data-fetching hooks
-│       └── store/        # Auth state (Zustand)
-├── nginx/                # Reverse proxy config
-├── docker-compose.yml    # Orchestrates all services
-└── .env.example          # All required environment variables
+│       ├── api/             # Axios API clients
+│       ├── components/      # UI primitives, layout, session/booking forms
+│       ├── hooks/           # React Query data hooks
+│       ├── pages/           # Home, Login, AuthCallback, SessionDetail, Dashboards
+│       ├── store/           # Zustand auth store (JWT persistence)
+│       └── types/           # TypeScript interfaces
+├── nginx/
+│   └── nginx.conf           # Reverse proxy routing
+├── docker-compose.yml       # All services
+├── .env.example             # All environment variables documented
+└── Makefile                 # Convenience aliases for docker compose commands
 ```
-
----
-
-## API Endpoints (key ones)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health/` | Health check |
-| GET | `/api/accounts/oauth/google/` | Start Google OAuth |
-| GET | `/api/accounts/oauth/github/` | Start GitHub OAuth |
-| GET | `/api/sessions/` | List all sessions |
-| POST | `/api/sessions/` | Create session (Creator) |
-| POST | `/api/bookings/` | Book a session |
-| GET | `/api/bookings/my/` | My bookings |
-| POST | `/api/payments/checkout/` | Stripe checkout |
 
 ---
 
@@ -147,29 +252,14 @@ ahoum/
 | Role | Capabilities |
 |------|-------------|
 | **User** | Browse sessions, book sessions, view own bookings, edit profile |
-| **Creator** | All User capabilities + create/edit/delete own sessions, view bookings for their sessions |
+| **Creator** | All User capabilities + create/edit/delete own sessions, view attendees |
 
-Role is set on the profile page or during first login (user selects their role).
-
----
-
-## Bonus Features Implemented
-
-- **MinIO / S3 Uploads**: Session cover images stored in MinIO (S3-compatible)
-- **Stripe Payments** (test mode): Payment required before booking is confirmed
-- **Rate Limiting**: Applied to auth and booking endpoints
+Any user can upgrade to Creator role from their Dashboard (no re-login needed).
 
 ---
 
-## Default Admin
+## Bonus Features
 
-After `docker-compose up --build`, an admin account is auto-created:
-- URL: `http://localhost/admin/`
-- Email: `admin@ahoum.com`
-- Password: `adminpassword123`
-
----
-
-## Environment Variables
-
-See [`.env.example`](.env.example) for all required variables with descriptions.
+- **Stripe** (test mode): PaymentIntent flow wired to booking confirmation via webhook
+- **MinIO / S3**: Avatar and session cover images uploaded to MinIO object storage
+- **Rate Limiting**: `django-ratelimit` on auth/booking endpoints; DRF global throttle
